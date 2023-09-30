@@ -12,11 +12,11 @@ from diffusers.utils.logging import \
 from rich.logging import RichHandler
 
 from animatediff import __version__, console, get_dir
-from animatediff.generate import (controlnet_preprocess, create_pipeline,
-                                  create_us_pipeline, ip_adapter_preprocess,
-                                  load_controlnet_models, run_inference,
-                                  run_upscale, save_output,
-                                  unload_controlnet_models)
+from animatediff.gene import (controlnet_preprocess, create_pipeline,
+                              create_us_pipeline, ip_adapter_preprocess,
+                              load_controlnet_models, run_inference,
+                              run_upscale, save_output,
+                              unload_controlnet_models)
 from animatediff.pipelines import AnimationPipeline, load_text_embeddings
 from animatediff.settings import (CKPT_EXTENSIONS, InferenceConfig,
                                   ModelConfig, get_infer_config,
@@ -1069,6 +1069,7 @@ def refine(
         model_config.seed = [seeds[repeat_count]]
 
         config_path = save_dir.joinpath(f"{repeat_count:02d}_prompt.json")
+
         config_path.write_text(model_config.json(indent=4), encoding="utf-8")
 
 
