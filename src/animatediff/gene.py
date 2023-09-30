@@ -1917,6 +1917,7 @@ def run_inference(
             height=height,
             video_length=clip_en - clip_st,
             return_dict=False,
+            output_type="latent",
             context_frames=context_frames,
             context_stride=context_stride + 1,
             context_overlap=0,
@@ -1935,6 +1936,8 @@ def run_inference(
         )
 
         pipeline_output.append(cur_output)
+
+    pipeline_output = torch.cat(pipeline_output, dim=2)
 
     logger.info("Generation complete, saving...")
 
