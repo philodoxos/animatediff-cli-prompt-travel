@@ -1,7 +1,7 @@
 {
   "name": "sample",
   "path": "share/Stable-diffusion/mistoonAnime_v20.safetensors",
-  "motion_module": "models/motion-module/mm_sd_v14.ckpt",
+  "motion_module": "models/motion-module/mm_sd_v15_v2.ckpt",
   "compile": false,
   "seed": [
     341774366206100
@@ -10,6 +10,7 @@
   "steps": 20,
   "guidance_scale": 10,
   "clip_skip": 2,
+  "prompt_fixed_ratio": 0.5,
   "head_prompt": "masterpiece, best quality, a beautiful and detailed portriat of muffet, monster girl,((purple body:1.3)),humanoid, arachnid, anthro,((fangs)),pigtails,hair bows,5 eyes,spider girl,6 arms,solo",
   "prompt_map": {
     "0":  "smile standing,((spider webs:1.0))",
@@ -24,6 +25,9 @@
   "lora_map": {
     "share/Lora/muffet_v2.safetensors" : 1.0,
     "share/Lora/add_detail.safetensors" : 1.0
+  },
+  "motion_lora_map": {
+    "models/motion_lora/v2_lora_PanLeft.ckpt":1.0
   },
   "ip_adapter_map": {
       "enable": true,

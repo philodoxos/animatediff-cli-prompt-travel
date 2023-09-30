@@ -97,6 +97,7 @@ def get_infer_config(
 class ModelConfig(BaseSettings):
     name: str = Field(...)  # Config name, not actually used for much of anything
     path: Path = Field(...)  # Path to the model
+    vae_path: str = ""  # Path to the model
     motion_module: Path = Field(...)  # Path to the motion module
     compile: bool = Field(False)  # whether to compile the model with TorchDynamo
     tensor_interpolation_slerp: bool = Field(True)
@@ -105,11 +106,14 @@ class ModelConfig(BaseSettings):
     steps: int = 25  # Number of inference steps to run
     guidance_scale: float = 7.5  # CFG scale to use
     clip_skip: int = 1  # skip the last N-1 layers of the CLIP text encoder
+    prompt_fixed_ratio: float = 0.5
     head_prompt: str = ""
     prompt_map: Dict[str,str]= Field({})
     tail_prompt: str = ""
     n_prompt: list[str] = Field([])  # Anti-prompt(s) to use
+    is_single_prompt_mode : bool = Field(False)
     lora_map: Dict[str,float]= Field({})
+    motion_lora_map: Dict[str,float]= Field({})
     ip_adapter_map: Dict[str,Any]= Field({})
     controlnet_map: Dict[str,Any]= Field({})
     upscale_config: Dict[str,Any]= Field({})

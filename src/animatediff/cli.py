@@ -22,7 +22,8 @@ from animatediff.settings import (CKPT_EXTENSIONS, InferenceConfig,
                                   ModelConfig, get_infer_config,
                                   get_model_config)
 from animatediff.utils.civitai2config import generate_config_from_civitai_info
-from animatediff.utils.model import checkpoint_to_pipeline, get_base_model
+from animatediff.utils.model import (checkpoint_to_pipeline,
+                                     fix_checkpoint_if_needed, get_base_model)
 from animatediff.utils.pipeline import get_context_params, send_to_device
 from animatediff.utils.util import (extract_frames, is_v2_motion_module,
                                     path_from_cwd, save_frames, save_imgs,
@@ -286,7 +287,7 @@ def generate(
     config_path = config_path.absolute()
     logger.info(f"Using generation config: {path_from_cwd(config_path)}")
     model_config: ModelConfig = get_model_config(config_path)
-    is_v2 = is_v2_motion_module(model_config.motion_module)
+    is_v2 = is_v2_motion_module(data_dir.joinpath(model_config.motion_module))
     infer_config: InferenceConfig = get_infer_config(is_v2)
 
     set_tensor_interpolation_method( model_config.tensor_interpolation_slerp )
@@ -360,6 +361,8 @@ def generate(
     if model_config.tail_prompt:
         model_config.tail_prompt = replace_wild_card(model_config.tail_prompt, wild_card_dir)
 
+    model_config.prompt_fixed_ratio = max(min(1.0, model_config.prompt_fixed_ratio),0)
+
     # save config to output directory
     logger.info("Saving prompt config to output directory")
     save_config_path = save_dir.joinpath("prompt.json")
@@ -399,6 +402,17 @@ def generate(
 
                     prompt_map[int(k)]=pr
 
+            prompt_map = dict(sorted(prompt_map.items()))
+            key_list = list(prompt_map.keys())
+#            for k0,k1 in zip(key_list,key_list[1:]+key_list[0:1]):
+            for k0,k1 in zip(key_list,key_list[1:]+[length]):
+                k05 = k0 + round((k1-k0) * model_config.prompt_fixed_ratio)
+                if k05 == k1:
+                    k05 -= 1
+                if k05 != k0:
+                    prompt_map[k05] = prompt_map[k0]
+
+
             output = run_inference(
                 pipeline=g_pipeline,
                 prompt="this is dummy string",
@@ -423,6 +437,7 @@ def generate(
                 no_frames=no_frames,
                 ip_adapter_map=ip_adapter_map,
                 output_map = model_config.output,
+                is_single_prompt_mode=model_config.is_single_prompt_mode
             )
             outputs.append(output)
             torch.cuda.empty_cache()
@@ -556,7 +571,7 @@ def tile_upscale(
     config_path = config_path.absolute()
     logger.info(f"Using generation config: {path_from_cwd(config_path)}")
     model_config: ModelConfig = get_model_config(config_path)
-    infer_config: InferenceConfig = get_infer_config(is_v2_motion_module(model_config.motion_module))
+    infer_config: InferenceConfig = get_infer_config(is_v2_motion_module(data_dir.joinpath(model_config.motion_module)))
     frames_dir = frames_dir.absolute()
 
     set_tensor_interpolation_method( model_config.tensor_interpolation_slerp )
@@ -771,6 +786,30 @@ def convert(
     logger.info(f"Converting checkpoint: {checkpoint}")
     _, pipeline_dir = checkpoint_to_pipeline(checkpoint, target_dir=out_dir)
     logger.info(f"Converted to HuggingFace pipeline at {pipeline_dir}")
+
+
+@cli.command()
+def fix_checkpoint(
+    checkpoint: Annotated[
+        Path,
+        typer.Argument(path_type=Path, dir_okay=False, exists=True, help="Path to a model checkpoint file"),
+    ] = ...,
+    debug: Annotated[
+        bool,
+        typer.Option(
+            "--debug",
+            "-d",
+            is_flag=True,
+            rich_help_panel="Debug",
+        ),
+    ] = False,
+):
+    """Fix checkpoint with error "AttributeError: 'Attention' object has no attribute 'to_to_k'" on loading"""
+    set_diffusers_verbosity_error()
+
+    logger.info(f"Converting checkpoint: {checkpoint}")
+    fix_checkpoint_if_needed(checkpoint, debug)
+
 
 
 @cli.command()
