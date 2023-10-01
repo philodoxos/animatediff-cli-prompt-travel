@@ -824,7 +824,7 @@ def run_inference(
         clip_en = min(duration, clip_st + context_frames)
         logger.info(f"Generating [{clip_st},{clip_en}] of size {width},{height}")
 
-        cur_control_map_images = {k:v for k,v in controlnet_image_map.items() if k >= clip_st and k < clip_en}
+        cur_control_map_images = {k-clip_st:v for k,v in controlnet_image_map.items() if k >= clip_st and k < clip_en}
 
         logger.info("cur cn map " + ",".join([str(k) for k in cur_control_map_images]))
 
