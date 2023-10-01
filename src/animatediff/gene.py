@@ -1935,7 +1935,7 @@ def run_inference(
             is_single_prompt_mode=is_single_prompt_mode,
         )
 
-        tshape = ''.join(map(str, cur_output.size()))
+        tshape = ','.join(map(str, cur_output.size()))
         logger.info("Got tensor shape " + tshape)
 
         pipeline_output.append(cur_output)
