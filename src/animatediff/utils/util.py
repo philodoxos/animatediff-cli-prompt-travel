@@ -30,10 +30,8 @@ def save_imgs(imgs:List[Image.Image], frames_dir: PathLike):
     for idx, img in enumerate(tqdm(imgs, desc=f"Saving frames to {frames_dir.stem}")):
         img.save( frames_dir.joinpath(f"{idx:08d}.png") )
 
-def save_video(video: Tensor, save_path: PathLike, fps: int = 8):
-    save_path = Path(save_path)
-    save_path.parent.mkdir(parents=True, exist_ok=True)
 
+def vid2images(video: Tensor):
     if video.ndim == 5:
         # batch, channels, frame, width, height -> frame, channels, width, height
         frames = video.permute(0, 2, 1, 3, 4).squeeze(0)
@@ -47,6 +45,13 @@ def save_video(video: Tensor, save_path: PathLike, fps: int = 8):
     frames = frames.mul(255).add_(0.5).clamp_(0, 255).permute(0, 2, 3, 1).to("cpu", torch.uint8).numpy()
 
     images = [Image.fromarray(frame) for frame in frames]
+    return images
+
+def save_video(video: Tensor, save_path: PathLike, fps: int = 8):
+    save_path = Path(save_path)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+
+    images = vid2images(vid2images)
     images[0].save(
         fp=save_path, format="GIF", append_images=images[1:], save_all=True, duration=(1 / fps * 1000), loop=0
     )

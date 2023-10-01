@@ -40,7 +40,7 @@ from animatediff.utils.util import (get_resized_image, get_resized_image2,
                                     get_tensor_interpolation_method,
                                     prepare_dwpose, prepare_ip_adapter,
                                     prepare_motion_module, save_frames,
-                                    save_imgs, save_video)
+                                    save_imgs, save_video, vid2images)
 
 try:
     import onnxruntime
@@ -814,18 +814,31 @@ def run_inference(
     is_single_prompt_mode: bool = False,
 ):
     out_dir = Path(out_dir)  # ensure out_dir is a Path
+    frame_dir = out_dir.joinpath(f"{idx:02d}-{seed}")
 
     seed_everything(seed)
 
+    def construct_overlap_tile_map(all_frames, context_overlap, controlnet_type_map, controlnet_image_map):
+        controlnet_type_map["controlnet_tile"] = {
+            "controlnet_conditioning_scale" : 0.75,
+            "control_guidance_start" : 0,
+            "control_guidance_end" : 1,
+            "control_scale_list" : [],
+            "guess_mode" : False,
+        }
 
+        for i in range(context_overlap):
+            controlnet_image_map[i]["controlnet_tile"] = all_frames[i-context_overlap]
 
-    pipeline_output = []
-    for clip_st in range(0, duration, context_frames):
+    all_frames = []
+    for clip_st in range(0, duration, context_frames-context_overlap):
         clip_en = min(duration, clip_st + context_frames)
         logger.info(f"Generating [{clip_st},{clip_en}] of size {width},{height}")
 
+        # cur cn map
         cur_control_map_images = {k-clip_st:v for k,v in controlnet_image_map.items() if k >= clip_st and k < clip_en}
-
+        if len(all_frames) > 0 and context_overlap > 0: # append previous tiles
+            construct_overlap_tile_map(all_frames, context_overlap, controlnet_type_map, cur_control_map_images)
         logger.info("cur cn map " + ",".join([str(k) for k in cur_control_map_images]))
 
         cur_output = pipeline(
@@ -853,11 +866,19 @@ def run_inference(
             interpolation_factor=1,
             is_single_prompt_mode=is_single_prompt_mode,
         )
+        frames = vid2images(cur_output)
 
         tshape = ','.join(map(str, cur_output.size()))
         logger.info("Got tensor shape " + tshape)
 
         pipeline_output.append(cur_output)
+
+        ##### blending?
+        all_frames += frames[context_overlap:]
+
+        if save_frames:
+            for i, frame in enumerate(frames):
+                frame.save(frame_dir.joinpath(f"{clip_st}_{clip_st+i:08d}.png"))
 
     pipeline_output = torch.cat(pipeline_output, dim=2)
 
@@ -867,7 +888,7 @@ def run_inference(
     prompt_tags = [re_clean_prompt.sub("", tag).strip().replace(" ", "-") for tag in prompt_map[list(prompt_map.keys())[0]].split(",")]
     prompt_str = "_".join((prompt_tags[:6]))[:50]
 
-    frame_dir = out_dir.joinpath(f"{idx:02d}-{seed}")
+
     out_file = out_dir.joinpath(f"{idx:02d}_{seed}_{prompt_str}")
 
     output_format = "gif"
@@ -880,32 +901,20 @@ def run_inference(
 
     if output_format == "gif":
         out_file = out_file.with_suffix(".gif")
-        if no_frames is not True:
-            save_frames(pipeline_output,frame_dir)
-
-            # generate the output filename and save the video
-            save_video(pipeline_output, out_file, output_fps)
+        all_frames[0].save(
+             fp=out_file, format="GIF", append_images=all_frames[1:], save_all=True, duration=(1 / output_fps * 1000), loop=0)
     else:
+        import cv2
+        out_file = out_file.with_suffix(".mp4" )
+        height, width, layers = all_frames[0].shape
+        size = (width,height)
 
-        save_frames(pipeline_output,frame_dir)
-        from animatediff.rife.ffmpeg import (FfmpegEncoder, VideoCodec,
-                                             codec_extn)
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(out_file, fourcc, output_fps, size, isColor = True)
 
-        out_file = out_file.with_suffix( f".{codec_extn(output_format)}" )
-
-        logger.info("Creating ffmpeg encoder...")
-        encoder = FfmpegEncoder(
-            frames_dir=frame_dir,
-            out_file=out_file,
-            codec=output_format,
-            in_fps=output_fps,
-            out_fps=output_fps,
-            lossless=False,
-            param= output_map["encode_param"] if "encode_param" in output_map else {}
-        )
-        logger.info("Encoding interpolated frames with ffmpeg...")
-        result = encoder.encode()
-        logger.debug(f"ffmpeg result: {result}")
+        for frame in all_frames:
+            out.write(frame)
+        out.release()
 
 
     logger.info(f"Saved sample to {out_file}")
