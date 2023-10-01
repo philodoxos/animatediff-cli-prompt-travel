@@ -821,7 +821,7 @@ def run_inference(
 
     def construct_overlap_tile_map(all_frames, context_overlap, controlnet_type_map, controlnet_image_map):
         controlnet_type_map["controlnet_tile"] = {
-            "controlnet_conditioning_scale" : 0.75,
+            "controlnet_conditioning_scale" : 0.9,
             "control_guidance_start" : 0,
             "control_guidance_end" : 1,
             "control_scale_list" : [],
@@ -830,6 +830,8 @@ def run_inference(
 
         for i in range(context_overlap):
             controlnet_image_map[i]["controlnet_tile"] = all_frames[i-context_overlap]
+            if "controlnet_depth" in controlnet_image_map[i]:
+                controlnet_image_map[i].pop("controlnet_depth")
 
     all_frames = []
     pipeline_output = []
