@@ -843,6 +843,10 @@ def run_inference(
 
         # cur cn map
         cur_control_map_images = {k-clip_st:v for k,v in controlnet_image_map.items() if k >= clip_st and k < clip_en}
+        for iframe, frame_controlnet_image_map in cur_control_map_images.items():
+            if "controlnet_tile" in frame_controlnet_image_map:
+                frame_controlnet_image_map.pop("controlnet_tile")
+
         if len(all_frames) > 0 and context_overlap > 0: # append previous tiles
             construct_overlap_tile_map(all_frames, context_overlap, controlnet_type_map, cur_control_map_images)
         logger.info("cur cn map " + ",".join([str(k) for k in cur_control_map_images]))
