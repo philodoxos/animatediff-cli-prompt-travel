@@ -828,10 +828,6 @@ def run_inference(
             "guess_mode" : False,
         }
 
-        for iframe, frame_controlnet_image_map in controlnet_image_map.items():
-            if "controlnet_tile" in frame_controlnet_image_map:
-                frame_controlnet_image_map.pop("controlnet_tile")
-
         for i in range(context_overlap):
             controlnet_image_map[i]["controlnet_tile"] = all_frames[i-context_overlap]
 
