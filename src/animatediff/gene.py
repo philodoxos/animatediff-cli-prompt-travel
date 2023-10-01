@@ -851,7 +851,7 @@ def run_inference(
         if len(all_frames) > 0 and context_overlap > 0: # append previous tiles
             construct_overlap_tile_map(all_frames, context_overlap, controlnet_type_map, cur_control_map_images)
 
-        for k, v in cur_control_map_images:
+        for k, v in cur_control_map_images.items():
             cns = ",".join([cn for cn in v])
             logger.info(f"cur cn map for {k + clip_st}: {cns}")
 
