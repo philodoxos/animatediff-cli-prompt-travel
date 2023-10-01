@@ -835,7 +835,7 @@ def run_inference(
     pipeline_output = []
     for clip_st in range(0, duration, context_frames-context_overlap):
         clip_en = min(duration, clip_st + context_frames)
-        if clip_en - clip_st <= context_frames:
+        if clip_en - clip_st <= context_overlap:
             break
 
         logger.info(f"Generating [{clip_st},{clip_en}] of size {width},{height}")
