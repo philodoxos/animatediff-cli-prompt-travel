@@ -824,6 +824,10 @@ def run_inference(
         clip_en = min(duration, clip_st + context_frames)
         logger.info(f"Generating [{clip_st},{clip_en}] of size {width},{height}")
 
+        cur_control_map_images = {k:v for k,v in controlnet_image_map.items() if k >= clip_st and k < clip_en}
+
+        logger.info("cur cn map " + ",".join([str(k) for k in cur_control_map_images]))
+
         cur_output = pipeline(
             prompt=prompt,
             negative_prompt=n_prompt,
@@ -840,7 +844,7 @@ def run_inference(
             clip_skip=clip_skip,
             prompt_map=prompt_map,
             controlnet_type_map=controlnet_type_map,
-            controlnet_image_map=controlnet_image_map,
+            controlnet_image_map=cur_control_map_images,
             controlnet_ref_map=controlnet_ref_map,
             controlnet_max_samples_on_vram=controlnet_map["max_samples_on_vram"] if "max_samples_on_vram" in controlnet_map else 999,
             controlnet_max_models_on_vram=controlnet_map["max_models_on_vram"] if "max_models_on_vram" in controlnet_map else 99,
