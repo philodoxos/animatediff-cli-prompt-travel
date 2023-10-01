@@ -819,8 +819,11 @@ def run_inference(
 
     seed_everything(seed)
 
+    overlap_tile_cn = "controlnet_tile"
+    overlap_tile_cn = "controlnet_ip2p"
+
     def construct_overlap_tile_map(all_frames, context_overlap, controlnet_type_map, controlnet_image_map):
-        controlnet_type_map["controlnet_tile"] = {
+        controlnet_type_map[overlap_tile_cn] = {
             "controlnet_conditioning_scale" : 0.9,
             "control_guidance_start" : 0,
             "control_guidance_end" : 1,
@@ -829,7 +832,7 @@ def run_inference(
         }
 
         for i in range(context_overlap):
-            controlnet_image_map[i]["controlnet_tile"] = all_frames[i-context_overlap]
+            controlnet_image_map[i][overlap_tile_cn] = all_frames[i-context_overlap]
             if "controlnet_depth" in controlnet_image_map[i]:
                 controlnet_image_map[i].pop("controlnet_depth")
 
@@ -845,8 +848,8 @@ def run_inference(
         # cur cn map
         cur_control_map_images = {k-clip_st:v for k,v in controlnet_image_map.items() if k >= clip_st and k < clip_en}
         for iframe, frame_controlnet_image_map in cur_control_map_images.items():
-            if "controlnet_tile" in frame_controlnet_image_map:
-                frame_controlnet_image_map.pop("controlnet_tile")
+            if overlap_tile_cn in frame_controlnet_image_map:
+                frame_controlnet_image_map.pop(overlap_tile_cn)
 
         if len(all_frames) > 0 and context_overlap > 0: # append previous tiles
             construct_overlap_tile_map(all_frames, context_overlap, controlnet_type_map, cur_control_map_images)
