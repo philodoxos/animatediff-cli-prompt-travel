@@ -815,6 +815,7 @@ def run_inference(
 ):
     out_dir = Path(out_dir)  # ensure out_dir is a Path
     frame_dir = out_dir.joinpath(f"{idx:02d}-{seed}")
+    frame_dir.mkdir(parents=True, exist_ok=True)
 
     seed_everything(seed)
 
