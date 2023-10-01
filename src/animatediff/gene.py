@@ -831,6 +831,7 @@ def run_inference(
             controlnet_image_map[i]["controlnet_tile"] = all_frames[i-context_overlap]
 
     all_frames = []
+    pipeline_output = []
     for clip_st in range(0, duration, context_frames-context_overlap):
         clip_en = min(duration, clip_st + context_frames)
         logger.info(f"Generating [{clip_st},{clip_en}] of size {width},{height}")
