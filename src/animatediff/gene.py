@@ -1906,7 +1906,7 @@ def run_inference(
     pipeline_output = []
     for clip_st in range(0, duration, context_frames):
         clip_en = min(duration, clip_st + context_frames)
-        logger.info(f"Generating [{clip_st},{clip_en}]")
+        logger.info(f"Generating [{clip_st},{clip_en}] of size {width},{height}")
 
         cur_output = pipeline(
             prompt=prompt,
