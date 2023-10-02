@@ -824,7 +824,7 @@ def run_inference(
 
     def construct_overlap_tile_map(all_frames, context_overlap, controlnet_type_map, controlnet_image_map):
         controlnet_type_map[overlap_tile_cn] = {
-            "controlnet_conditioning_scale" : 0.9,
+            "controlnet_conditioning_scale" : 1.0,
             "control_guidance_start" : 0,
             "control_guidance_end" : 1,
             "control_scale_list" : [],
