@@ -891,8 +891,9 @@ def run_inference(
         pipeline_output.append(cur_output)
 
         ##### blending?
-        for i in range(context_overlap):
-            all_frames[i-context_overlap] = Image.blend(all_frames[i-context_overlap], frames[i], i / context_overlap)
+        if len(all_frames) > context_overlap:
+            for i in range(context_overlap):
+                all_frames[i-context_overlap] = Image.blend(all_frames[i-context_overlap], frames[i], i / context_overlap)
         all_frames += frames[context_overlap:]
 
         if save_frames:
