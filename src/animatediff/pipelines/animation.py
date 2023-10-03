@@ -35,6 +35,7 @@ from animatediff.models.unet_blocks import (CrossAttnDownBlock3D,
                                             UpBlock3D)
 from animatediff.pipelines.context import (get_context_scheduler,
                                            get_total_steps)
+from animatediff.utils.colorfix import colorfix_noise
 from animatediff.utils.model import nop_train
 from animatediff.utils.pipeline import get_memory_format
 from animatediff.utils.util import (end_profile,
@@ -2259,25 +2260,11 @@ class AnimationPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
         if controlnet_image_map and colorfix_hack is not None and colorfix_hack[0] in controlnet_image_map:
             (colorfix_cn, colorfix_weight, colorfix_variation) = colorfix_hack
             for ifx, colorfix_img in controlnet_image_map[colorfix_cn].items():
+                logger.info(f"colorfix image for {ifx}")
                 latent_colorfix_img = self.vae.encode(colorfix_img).latent_dist.sample(generator=generator)
                 latent_colorfix_img = self.vae.config.scaling_factor * latent_colorfix_img
                 ref_image_latents = ref_image_latents.to(device=device, dtype=latents.dtype)
                 colorfix_latent_map[ifx] = latent_colorfix_img
-
-        def colorfix(latent_xt, colorfix_latent, colorfix_weight, colorfix_variation):
-            xt = latent_xt[:, :4, :, :]
-            x0_origin = colorfix_latent
-            k = colorfix_variation
-            w = max(0.0, min(1.0, float(colorfix_weight)))
-
-            t = torch.round(timesteps.float()).long()
-            x0_prd = predict_start_from_noise(outer.sd_ldm, xt, t, h)
-            x0 = x0_prd - blur(x0_prd, k) + blur(x0_origin, k)
-
-            eps_prd = predict_noise_from_start(outer.sd_ldm, xt, t, x0)
-
-            h = eps_prd * w + h * (1 - w)
-
 
         # 7. Denoising loop
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
@@ -2517,6 +2504,19 @@ class AnimationPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
                     noise_pred_uncond, noise_pred_text = (noise_pred / counter).chunk(2)
                     noise_pred = noise_pred_uncond + guidance_scale * (noise_pred_text - noise_pred_uncond)
 
+                # colorfix
+                if colorfix_hack is not None:
+                    noise_pred = rearrange(noise_pred, "b c f h w -> (b f) c h w")
+                    cur_xt_latent = rearrange(latents, "b c f h w -> (b f) c h w")
+                    for ifx in range(latents.shape[0]):
+                        if ifx in colorfix_latent_map:  # part of colorfix
+                            logger.info(f"t{timesteps} colorfix mixing noise for {ifx}")
+                            noise_pred[ifx:ifx+1] = colorfix_noise(cur_xt_latent[ifx:ifx+1],
+                                colorfix_latent_map[ifx], colorfix_weight=colorfix_weight,
+                                colorfix_variation=colorfix_variation,
+                                cur_noise=noise_pred[ifx:ifx+1], timesteps=t)
+                    noise_pred = rearrange(noise_pred, "(b f) c h w -> b c f h w", f=video_length)
+
                 # compute the previous noisy sample x_t -> x_t-1
                 latents = self.scheduler.step(
                     model_output=noise_pred,
@@ -2525,15 +2525,6 @@ class AnimationPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
                     **extra_step_kwargs,
                     return_dict=False,
                 )[0]
-
-                # colorfix
-                if colorfix_hack is not None:
-                    latents = rearrange(latents.to(latents_device), "b c f h w -> (b f) c h w")
-                    for ifx in range(latents.shape[0]):
-                        latents[ifx] = ""
-                    latents =  rearrange(latents, "(b f) c h w -> b c f h w", f=video_length).cpu().float().numpy()
-
-                # ?????
 
                 # call the callback, if provided
                 if i == len(timesteps) - 1 or (
