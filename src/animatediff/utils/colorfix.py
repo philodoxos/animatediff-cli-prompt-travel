@@ -67,13 +67,13 @@ def colorfix_noise(latent_xt, colorfix_latent, colorfix_weight, colorfix_variati
     k = colorfix_variation
     w = max(0.0, min(1.0, float(colorfix_weight)))
     t = torch.round(timesteps.float()).long()
+    h = cur_noise
 
     x0_prd = fake_ddpm.predict_start_from_noise(xt, t, h)
     x0 = x0_prd - colorfix_blur(x0_prd, k) + colorfix_blur(x0_origin, k)
 
     eps_prd = fake_ddpm.predict_noise_from_start(xt, t, x0)
 
-    h = cur_noise
     h = eps_prd * w + h * (1 - w)
 
     return h
