@@ -880,7 +880,7 @@ def run_inference(
             controlnet_max_models_on_vram=controlnet_map["max_models_on_vram"] if "max_models_on_vram" in controlnet_map else 99,
             controlnet_is_loop = controlnet_map["is_loop"] if "is_loop" in controlnet_map else True,
             ip_adapter_map=ip_adapter_map,
-#            colorfix_hack=("controlnet_ip2p", 0.5, 4),
+            colorfix_hack=("controlnet_ip2p", 0.5, 4),
             interpolation_factor=1,
             is_single_prompt_mode=is_single_prompt_mode,
         )
