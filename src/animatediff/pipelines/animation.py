@@ -2261,6 +2261,12 @@ class AnimationPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
             (colorfix_cn, colorfix_weight, colorfix_variation) = colorfix_hack
             for ifx, colorfix_img in controlnet_image_map[colorfix_cn].items():
                 logger.info(f"colorfix image for {ifx}")
+                colorfix_img = np.array(colorfix_img).astype(np.float32) / 255.0
+                colorfix_img = np.vstack([colorfix_img[None].transpose(0, 3, 1, 2)] * batch_size)
+                colorfix_img = torch.from_numpy(colorfix_img)
+                colorfix_img = 2.0 * colorfix_img - 1.0
+                colorfix_img = colorfix_img.to(device=device, dtype=self.vae.dtype)
+
                 latent_colorfix_img = self.vae.encode(colorfix_img).latent_dist.sample(generator=generator)
                 latent_colorfix_img = self.vae.config.scaling_factor * latent_colorfix_img
                 ref_image_latents = ref_image_latents.to(device=device, dtype=latents.dtype)
