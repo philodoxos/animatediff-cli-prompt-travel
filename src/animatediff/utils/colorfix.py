@@ -1,8 +1,13 @@
+import sys
 from functools import partial
 
 import numpy as np
 import pytorch_lightning as pl
 import torch
+
+sys.path.append('/workspace/latent-diffusion')
+sys.path.append('/workspace/latent-diffusion/ldm')
+
 from ldm.modules.diffusionmodules.util import (extract_into_tensor,
                                                make_beta_schedule)
 
