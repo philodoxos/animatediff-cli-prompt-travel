@@ -2522,7 +2522,7 @@ class AnimationPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
                             noise_pred[ifx:ifx+1] = colorfix_noise(cur_xt_latent[ifx:ifx+1],
                                 colorfix_latent_map[ifx], colorfix_weight=colorfix_weight,
                                 colorfix_variation=colorfix_variation,
-                                cur_noise=noise_pred[ifx:ifx+1], timesteps=t)
+                                cur_noise=noise_pred[ifx:ifx+1], timesteps=timesteps)
                     noise_pred = rearrange(noise_pred, "(b f) c h w -> b c f h w", f=video_length)
 
                 # compute the previous noisy sample x_t -> x_t-1
