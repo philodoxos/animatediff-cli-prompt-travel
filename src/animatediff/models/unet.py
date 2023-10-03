@@ -552,7 +552,7 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
         elif pretrained_model_path.joinpath(WEIGHTS_NAME).exists():
             logger.debug(f"loading weights from {pretrained_model_path} ...")
             state_dict = torch.load(
-                pretrained_model_path.joinpath(WEIGHTS_NAME), map_location="cpu", weights_only=True
+                pretrained_model_path.joinpath(WEIGHTS_NAME), map_location="cpu", weights_only=False
             )
         else:
             raise FileNotFoundError(f"no weights file found in {pretrained_model_path}")
