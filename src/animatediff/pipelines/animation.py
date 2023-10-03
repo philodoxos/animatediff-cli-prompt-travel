@@ -1827,6 +1827,7 @@ class AnimationPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
         controlnet_max_models_on_vram: int=99,
         controlnet_is_loop: bool=True,
         ip_adapter_map: Dict[str, Any] = None,
+        colorfix_hack: Tuple = None,
         interpolation_factor = 1,
         is_single_prompt_mode = False,
         **kwargs,
@@ -2252,6 +2253,32 @@ class AnimationPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
             context_overlap,
         )
 
+
+        # 6.8 colorfix hack
+        colorfix_latent_map = dict()
+        if controlnet_image_map and colorfix_hack is not None and colorfix_hack[0] in controlnet_image_map:
+            (colorfix_cn, colorfix_weight, colorfix_variation) = colorfix_hack
+            for ifx, colorfix_img in controlnet_image_map[colorfix_cn].items():
+                latent_colorfix_img = self.vae.encode(colorfix_img).latent_dist.sample(generator=generator)
+                latent_colorfix_img = self.vae.config.scaling_factor * latent_colorfix_img
+                ref_image_latents = ref_image_latents.to(device=device, dtype=latents.dtype)
+                colorfix_latent_map[ifx] = latent_colorfix_img
+
+        def colorfix(latent_xt, colorfix_latent, colorfix_weight, colorfix_variation):
+            xt = latent_xt[:, :4, :, :]
+            x0_origin = colorfix_latent
+            k = colorfix_variation
+            w = max(0.0, min(1.0, float(colorfix_weight)))
+
+            t = torch.round(timesteps.float()).long()
+            x0_prd = predict_start_from_noise(outer.sd_ldm, xt, t, h)
+            x0 = x0_prd - blur(x0_prd, k) + blur(x0_origin, k)
+
+            eps_prd = predict_noise_from_start(outer.sd_ldm, xt, t, x0)
+
+            h = eps_prd * w + h * (1 - w)
+
+
         # 7. Denoising loop
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
         with self.progress_bar(total=total_steps) as progress_bar:
@@ -2498,6 +2525,15 @@ class AnimationPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
                     **extra_step_kwargs,
                     return_dict=False,
                 )[0]
+
+                # colorfix
+                if colorfix_hack is not None:
+                    latents = rearrange(latents.to(latents_device), "b c f h w -> (b f) c h w")
+                    for ifx in range(latents.shape[0]):
+                        latents[ifx] = ""
+                    latents =  rearrange(latents, "(b f) c h w -> b c f h w", f=video_length).cpu().float().numpy()
+
+                # ?????
 
                 # call the callback, if provided
                 if i == len(timesteps) - 1 or (

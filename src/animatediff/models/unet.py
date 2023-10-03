@@ -539,6 +539,9 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
         ]
         unet_config["mid_block_type"] = "UNetMidBlock3DCrossAttn"
 
+        import json
+        logger.info(json.dumps(unet_config))
+
         model: nn.Module = cls.from_config(unet_config, **unet_additional_kwargs)
 
         # load the vanilla weights
