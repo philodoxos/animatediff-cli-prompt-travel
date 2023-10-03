@@ -891,8 +891,9 @@ def run_inference(
 
         pipeline_output.append(cur_output)
 
-        ##### blending?
+
         if len(all_frames) > context_overlap:
+            ##### blending
             for i in range(context_overlap):
                 all_frames[i-context_overlap] = Image.blend(all_frames[i-context_overlap], frames[i], i / context_overlap)
             all_frames += frames[context_overlap:]
@@ -929,6 +930,8 @@ def run_inference(
     else:
         import cv2
         out_file = out_file.with_suffix(".mp4" )
+        all_frames = [cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR) for img in all_frames]
+
         height, width, layers = all_frames[0].shape
         size = (width,height)
 
