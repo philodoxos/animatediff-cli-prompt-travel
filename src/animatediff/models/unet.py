@@ -546,18 +546,18 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
 
         # load the vanilla weights
         if pretrained_model_path.joinpath(SAFETENSORS_WEIGHTS_NAME).exists():
-            logger.debug(f"loading safeTensors weights from {pretrained_model_path} ...")
+            logger.info(f"loading safeTensors weights from {pretrained_model_path} ...")
             state_dict = load_file(pretrained_model_path.joinpath(SAFETENSORS_WEIGHTS_NAME), device="cpu")
 
         elif pretrained_model_path.joinpath(WEIGHTS_NAME).exists():
-            logger.debug(f"loading weights from {pretrained_model_path} ...")
+            logger.info(f"loading weights from {pretrained_model_path} ...")
             state_dict = torch.load(
                 pretrained_model_path.joinpath(WEIGHTS_NAME), map_location="cpu", weights_only=False
             )
         else:
             raise FileNotFoundError(f"no weights file found in {pretrained_model_path}")
 
-        logger.info(",".join(list(state_dict.keys())))
+        logger.info(",".join([w for w in state_dict if "alpha" in w or "beta" in w]))
         object_methods = [method_name for method_name in dir(state_dict)
                   if callable(getattr(state_dict, method_name))]
         logger.info(",".join(object_methods))
