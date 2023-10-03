@@ -558,6 +558,9 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
             raise FileNotFoundError(f"no weights file found in {pretrained_model_path}")
 
         logger.info(",".join(list(state_dict.keys())))
+        object_methods = [method_name for method_name in dir(state_dict)
+                  if callable(getattr(state_dict, method_name))]
+        logger.info(",".join(object_methods))
 
         # load the motion module weights
         if motion_module_path.exists() and motion_module_path.is_file():
