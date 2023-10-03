@@ -2271,7 +2271,7 @@ class AnimationPipeline(DiffusionPipeline, TextualInversionLoaderMixin):
 
                 latent_colorfix_img = self.vae.encode(colorfix_img).latent_dist.sample(generator=generator)
                 latent_colorfix_img = self.vae.config.scaling_factor * latent_colorfix_img
-                ref_image_latents = ref_image_latents.to(device=device, dtype=latents.dtype)
+                latent_colorfix_img = latent_colorfix_img.to(device=device, dtype=latents.dtype)
                 colorfix_latent_map[ifx] = latent_colorfix_img
 
         # 7. Denoising loop
