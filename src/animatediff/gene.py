@@ -895,7 +895,9 @@ def run_inference(
         if len(all_frames) > context_overlap:
             for i in range(context_overlap):
                 all_frames[i-context_overlap] = Image.blend(all_frames[i-context_overlap], frames[i], i / context_overlap)
-        all_frames += frames[context_overlap:]
+            all_frames += frames[context_overlap:]
+        else:
+            all_frames += frames
 
         if save_frames:
             for i, frame in enumerate(frames):
